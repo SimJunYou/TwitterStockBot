@@ -3,7 +3,6 @@ from telegram import Update, Bot, InputMediaPhoto
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 
 import logging
-import re
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
@@ -38,10 +37,11 @@ class TelegramBot:
         logger.info("Starting to read message queue...")
         while True:
             tweet_items = tele_queue.get()
+            if not CONFIG['enabled']:
+                continue
+
             tweet_str, *tweet_photos = tweet_items
-            if not tweet_str:  # exit condition - no more tweets
-                break
-            elif tweet_photos:
+            if tweet_photos:
                 #  send the photos with the tweet text as caption
                 logger.info("Sending message with image(s):\n" + tweet_str)
                 if len(tweet_photos) == 1:
@@ -93,9 +93,10 @@ def latest_cmd(update: Update, context: CallbackContext) -> None:
     if not CONFIG['chat_id']:
         logging.warn("/latest - Tried to run while not initialised")
         return
-    logging.info(f"/latest - Running")
+    logging.info(f"/latest - Called")
     update.message.reply_text("Got it! Here are the latest tweets...")
     job_queue.put('latest')  # request the job thread to fill the tweet queue here
+    logging.info(f"/latest - Placed job request for latest tweets")
 
 
 if __name__ == "__main__":
