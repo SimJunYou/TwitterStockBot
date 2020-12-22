@@ -33,7 +33,6 @@ class TwitterBot:
             logger.info(f"Got a new tweet from: {'@' + eachTweet['user']['screen_name']}")
             tweet_str = format_tweet(eachTweet)
             tele_queue.put([tweet_str])
-            job_queue.put('message')
 
     def get_latest_tweets(self):
         for eachId in self.users:

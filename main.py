@@ -24,6 +24,10 @@ def main():
     tele_message_thread = Thread(target=tele.start_messaging_queue, daemon=True)
     tele_message_thread.start()
 
+    logger.info("Running tweet-tracking Twitter bot in its own thread...")
+    tele_message_thread = Thread(target=twit.start_track_stream, daemon=True)
+    tele_message_thread.start()
+
     # Main thread handles job requests between the bots
     while True:
         logger.info("Awaiting job")

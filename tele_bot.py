@@ -1,4 +1,4 @@
-from config import TB_TOKEN, CONFIG, use_mutex, tele_queue, job_queue
+from config import TB_TOKEN, CONFIG, USERS, use_mutex, tele_queue, job_queue
 from telegram import Update, Bot, InputMediaPhoto
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 
@@ -9,7 +9,11 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 logger = logging.getLogger(__name__)
 
-START_MSG = "Started the bot here!"
+START_MSG = ("Bot started. Will send you latest tweets from the people here:\n"
+             + "\n".join(USERS) + "\n\n"
+             + "You can also use /latest to get their most recent tweets if you're impatient. "
+             + "Also, you can use /toggle if I'm getting annoying.\n\n"
+             + "Disclaimer: Not liable for any financial losses.")
 
 
 class TelegramBot:
