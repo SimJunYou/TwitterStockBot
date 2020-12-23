@@ -31,6 +31,9 @@ class TwitterBot:
             if ("@" + eachTweet['user']['screen_name']) not in USERS:  # Added the @ to fit USERS format
                 continue
             logger.info(f"Got a new tweet from: {'@' + eachTweet['user']['screen_name']}")
+            if eachTweet['text'][0] == '@':  # If it's a reply, don't proceed
+                logger.warn(f"Ignoring reply tweets. Text:\n{eachTweet['text']}")
+                continue
             tweet_str = format_tweet(eachTweet)
             tele_queue.put([tweet_str])
 
@@ -47,6 +50,7 @@ class TwitterBot:
                 for eachMedia in tweet['media']:
                     tweet_img = eachMedia['media_url']
                     tweet_items.append(tweet_img)
+            print(tweet)
             tele_queue.put(tweet_items)
 
 

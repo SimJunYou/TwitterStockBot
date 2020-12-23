@@ -60,18 +60,6 @@ class TelegramBot:
             tele_queue.task_done()
 
 
-# UTILITIES
-"""
-def extract_image_url(tweet):
-    url_list = []
-    while result := re.search("https://t.co(\S)*(\s)*", tweet):
-        tweet = tweet[result.span()[1]:]
-        url = str(result.group()).strip()
-        url_list.append(url)
-    return url_list
-"""
-
-
 # HANDLERS
 @use_mutex
 def start_cmd(update: Update, context: CallbackContext) -> None:
