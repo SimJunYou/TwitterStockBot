@@ -1,5 +1,5 @@
 from config import TB_TOKEN, CONFIG, USERS, use_mutex, tele_queue, job_queue
-from telegram import Update, Bot, InputMediaPhoto
+from telegram import Update, Bot, InputMediaPhoto, ParseMode
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 
 import logging
@@ -28,6 +28,7 @@ class TelegramBot:
         self.dp.add_handler(CommandHandler('start', start_cmd))
         self.dp.add_handler(CommandHandler('toggle', toggle_cmd))
         self.dp.add_handler(CommandHandler('latest', latest_cmd))
+        self.dp.add_handler(CommandHandler('recommend', recommend_cmd))
 
     def run(self):
         try:  # Non-fatal ValueError always occurs when running updater.idle() in sub-thread, so just hiding it here
@@ -49,14 +50,19 @@ class TelegramBot:
                 #  send the photos with the tweet text as caption
                 logger.info("Sending message with image(s):\n" + tweet_str)
                 if len(tweet_photos) == 1:
-                    self.bot.send_photo(chat_id=CONFIG['chat_id'], photo=tweet_photos[0], caption=tweet_str)
+                    self.bot.send_photo(chat_id=CONFIG['chat_id'],
+                                        photo=tweet_photos[0],
+                                        caption=tweet_str)
                 else:
                     tweet_media_group = [InputMediaPhoto(media=each) for each in tweet_photos]
-                    self.bot.send_message(chat_id=CONFIG['chat_id'], text=tweet_str)
-                    self.bot.send_media_group(chat_id=CONFIG['chat_id'], media=tweet_media_group)
+                    self.bot.send_message(chat_id=CONFIG['chat_id'],
+                                          text=tweet_str)
+                    self.bot.send_media_group(chat_id=CONFIG['chat_id'],
+                                              media=tweet_media_group)
             else:
                 logger.info("Sending message:\n" + tweet_str)
-                self.bot.send_message(chat_id=CONFIG['chat_id'], text=tweet_str)
+                self.bot.send_message(chat_id=CONFIG['chat_id'],
+                                      text=tweet_str)
             tele_queue.task_done()
 
 
@@ -91,6 +97,17 @@ def latest_cmd(update: Update, context: CallbackContext) -> None:
     logging.info(f"/latest - Placed job request for latest tweets")
 
 
+def recommend_cmd(update: Update, context: CallbackContext) -> None:
+    if not CONFIG['chat_id']:
+        logging.warn("/recommend - Tried to run while not initialised")
+        return
+    logging.info(f"/recommend - Called")
+    update.message.reply_text("Let me look for their recommendations...")
+    job_queue.put('recommend')
+    logging.info(f"/recommend - Placed job request for recommendations")
+
+
+# for debug only
 if __name__ == "__main__":
     tb = TelegramBot()
     tb.bot.send_photo(chat_id=234058962, photo="https://pbs.twimg.com/media/Ep2BhyzU0AAa0Uo?format=jpg&name=large")

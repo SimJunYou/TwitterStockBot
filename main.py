@@ -35,6 +35,8 @@ def main():
         logger.info("Received job: " + job)
         if job == 'latest':
             twit.get_latest_tweets()
+        elif job == 'recommend':
+            twit.get_recommendations()
         # to add more tasks later on
         job_queue.task_done()
         logger.info("Completed job: " + job)
