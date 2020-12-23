@@ -11,10 +11,11 @@ logger = logging.getLogger(__name__)
 
 START_MSG = ("Bot started. Will send you latest tweets from the people here:\n"
              + "\n".join(USERS) + "\n\n"
-             + "You can also use /latest to get their most recent tweets if you're impatient, "
-             + "or /recommend to search for their portfolios and recommendations."
-             + "Also, you can use /toggle if I'm getting annoying.\n\n"
-             + "Disclaimer: Not liable for any financial losses.")
+             + "Other commands:\n"
+             + "/latest - Get each user's latest tweet.\n"
+             + "/recommend - Searches for their portfolios and recommendations.\n"
+             + "/toggle - Stop my live tweet feed. Other commands will still work.\n\n"
+             + "(Disclaimer: Not liable for any financial losses.)")
 
 
 class TelegramBot:
