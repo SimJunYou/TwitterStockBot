@@ -1,10 +1,9 @@
-from config import TW_KEY_SET, USERS, tele_queue, job_queue
+from config import TW_KEY_SET, USERS, LOG_LVL, tele_queue
 import twitter
 import logging
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level=logging.INFO)
-
+logging.basicConfig(format='%(asctime)s - %(threadName)s - %(levelname)s - %(message)s',
+                    level=LOG_LVL)
 logger = logging.getLogger(__name__)
 
 
@@ -32,9 +31,9 @@ class TwitterBot:
                 continue
             logger.info(f"Got a new tweet from: {'@' + each_tweet['user']['screen_name']}")
             if each_tweet['text'][0] == '@':  # If it's a reply, don't proceed
-                logger.warn(f"Ignoring reply tweets. Text:\n{each_tweet['text']}")
+                logger.debug(f"Ignoring reply tweets. Text:\n{each_tweet['text']}")
                 continue
-            enqueue_tweet(each_tweet)
+            enqueue_message(each_tweet)
 
     def get_latest_tweets(self):
         logger.info("Scraping latest tweets from user list...")
@@ -43,36 +42,60 @@ class TwitterBot:
             tweet = self.api.GetUserTimeline(user_id=int(eachId), count=1, include_rts=False, exclude_replies=True)
             if not tweet:
                 continue
-            enqueue_tweet(tweet[0].AsDict())
+            enqueue_message(tweet[0].AsDict())
 
     def get_recommendations(self):
         logger.info("Scraping recommendations from user list...")
-        for eachId in self.users:
-            # first, get a list of 100 tweets from each user's timeline
-            tweets = self.api.GetUserTimeline(user_id=int(eachId), count=100, include_rts=False, exclude_replies=True)
-            if not tweets:
-                continue
-            for each_tweet in tweets:
-                each_tweet = each_tweet.AsDict()
-                if 'text' not in each_tweet:
+        exists = False
+        current_max_search = 100
+        rec_count = 0
+        while not exists and current_max_search < 500:
+            for eachId in self.users:
+                # first, get a list of 100 tweets from each user's timeline
+                tweets = self.api.GetUserTimeline(user_id=int(eachId), count=current_max_search,
+                                                  include_rts=False, exclude_replies=True)
+                if not tweets:
                     continue
-                # if the tweet says 'portfolio' or 'position' and contains >= 5 '$' indicating stock symbols,
-                if 'portfolio' in each_tweet['text'] or 'position' in each_tweet['text']:
-                    if each_tweet['text'].count('$') >= 5:
-                        enqueue_tweet(each_tweet)
+                for each_tweet in tweets:
+                    each_tweet = each_tweet.AsDict()
+                    if 'text' not in each_tweet:
+                        continue
+                    # if the tweet says 'portfolio' or 'position' and contains >= 5 '$' indicating stock symbols,
+                    if 'portfolio' in each_tweet['text'] or 'position' in each_tweet['text']:
+                        if each_tweet['text'].count('$') >= 5:
+                            exists = True
+                            logger.debug(f"Found a relevant tweet from user ID {eachId}!")
+                            rec_count += 1
+                            enqueue_message(each_tweet)
+            if not exists:
+                logger.debug(f"Found nothing relevant with search range {current_max_search}, expanding...")
+                current_max_search += 100  # increase the search range to look further
+
+        if not exists:
+            logger.warn(f"Found nothing relevant at max search range.")
+            enqueue_message("No recommendations found!")
+        else:
+            logger.info(f"Found {rec_count} relevant tweets.")
 
 
-def enqueue_tweet(tweet: dict):
-    logger.info(f"Queueing tweet from {tweet['user']['screen_name']}")
-    print(tweet)
+def enqueue_message(item):
+    if type(item) == dict:
+        tele_queue.put(itemize_tweet(item))
+    elif type(item) != list:
+        tele_queue.put([item])
+    else:
+        tele_queue.put(item)
+
+
+def itemize_tweet(tweet: dict):
+    logger.debug(f"Queueing tweet from {tweet['user']['screen_name']}")
     tweet_str = format_tweet(tweet)
     tweet_items = [tweet_str]
     if tweet.get('media'):  # if there are pictures, add the URL to tweet_items behind the main text
         for eachMedia in tweet['media']:
             tweet_img = eachMedia['media_url']
             tweet_items.append(tweet_img)
-    print(tweet)
-    tele_queue.put(tweet_items)
+    return tweet_items
 
 
 def format_tweet(tweet: dict):

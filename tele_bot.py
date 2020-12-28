@@ -1,12 +1,11 @@
-from config import TB_TOKEN, CONFIG, USERS, use_mutex, tele_queue, job_queue
-from telegram import Update, Bot, InputMediaPhoto, ParseMode
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
+from config import TB_TOKEN, CONFIG, USERS, LOG_LVL, use_mutex, tele_queue, job_queue
+from telegram import Update, Bot, InputMediaPhoto
+from telegram.ext import Updater, CommandHandler, CallbackContext
 
 import logging
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level=logging.INFO)
-
+logging.basicConfig(format='%(asctime)s - %(threadName)s - %(levelname)s - %(message)s',
+                    level=LOG_LVL)
 logger = logging.getLogger(__name__)
 
 START_MSG = ("Bot started. Will send you latest tweets from the people here:\n"
@@ -14,7 +13,8 @@ START_MSG = ("Bot started. Will send you latest tweets from the people here:\n"
              + "Other commands:\n"
              + "/latest - Get each user's latest tweet.\n"
              + "/recommend - Searches for their portfolios and recommendations.\n"
-             + "/toggle - Stop my live tweet feed. Other commands will still work.\n\n"
+             + "/toggle - Stop my live tweet feed. Other commands will still work.\n"
+             + "/shutdown - Shut me down.\n\n"
              + "(Disclaimer: Not liable for any financial losses.)")
 
 
@@ -31,6 +31,7 @@ class TelegramBot:
         self.dp.add_handler(CommandHandler('toggle', toggle_cmd))
         self.dp.add_handler(CommandHandler('latest', latest_cmd))
         self.dp.add_handler(CommandHandler('recommend', recommend_cmd))
+        self.dp.add_handler(CommandHandler('shutdown', shutdown_cmd))
 
     def run(self):
         try:  # Non-fatal ValueError always occurs when running updater.idle() in sub-thread, so just hiding it here
@@ -50,7 +51,7 @@ class TelegramBot:
             tweet_str, *tweet_photos = tweet_items
             if tweet_photos:
                 #  send the photos with the tweet text as caption
-                logger.info("Sending message with image(s):\n" + tweet_str)
+                logger.debug("Sending message with image(s):\n" + tweet_str)
                 if len(tweet_photos) == 1:
                     self.bot.send_photo(chat_id=CONFIG['chat_id'],
                                         photo=tweet_photos[0],
@@ -62,7 +63,7 @@ class TelegramBot:
                     self.bot.send_media_group(chat_id=CONFIG['chat_id'],
                                               media=tweet_media_group)
             else:
-                logger.info("Sending message:\n" + tweet_str)
+                logger.debug("Sending message:\n" + tweet_str)
                 self.bot.send_message(chat_id=CONFIG['chat_id'],
                                       text=tweet_str)
             tele_queue.task_done()
@@ -93,20 +94,27 @@ def latest_cmd(update: Update, context: CallbackContext) -> None:
     if not CONFIG['chat_id']:
         logging.warn("/latest - Tried to run while not initialised")
         return
-    logging.info(f"/latest - Called")
+    logging.info("/latest - Called")
     update.message.reply_text("Got it! Here are the latest tweets...")
     job_queue.put('latest')  # request the job thread to fill the tweet queue here
-    logging.info(f"/latest - Placed job request for latest tweets")
 
 
 def recommend_cmd(update: Update, context: CallbackContext) -> None:
     if not CONFIG['chat_id']:
         logging.warn("/recommend - Tried to run while not initialised")
         return
-    logging.info(f"/recommend - Called")
+    logging.info("/recommend - Called")
     update.message.reply_text("Let me look for their recommendations...")
     job_queue.put('recommend')
-    logging.info(f"/recommend - Placed job request for recommendations")
+
+
+def shutdown_cmd(update: Update, context: CallbackContext) -> None:
+    if not CONFIG['chat_id']:
+        logging.warn("/shutdown - Tried to run while not initialised")
+        return
+    logging.info("/shutdown - Called")
+    update.message.reply_text("Shutting down, bye!")
+    job_queue.put('shutdown')
 
 
 # for debug only

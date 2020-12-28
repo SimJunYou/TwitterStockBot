@@ -2,12 +2,16 @@ from threading import Lock
 from queue import Queue
 from dotenv import load_dotenv, find_dotenv
 import os
+import logging
 
 # Global config values for the bot
 CONFIG = {'enabled': True,
           'realtime': True,
           'chat_id': None}
 CONFIG_MUTEX = Lock()
+
+# Global logging level
+LOG_LVL = logging.INFO
 
 
 # Decorator function for the mutex lock and acquire
