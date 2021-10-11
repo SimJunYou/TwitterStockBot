@@ -27,7 +27,10 @@ If I were to continue working on this, I would probably try spinning up a Postgr
 
 ## Commands
 `/latest` - Get each user's latest tweet.
+
 `/recommend` - Searches for the followed user's portfolios and recommendations.
+
 `/toggle` - Stop the bot's live tweet feed. Other commands will still work.
+
 `/shutdown` - Shut down the bot.
 
