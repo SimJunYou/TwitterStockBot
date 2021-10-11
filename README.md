@@ -34,3 +34,7 @@ If I were to continue working on this, I would probably try spinning up a Postgr
 
 `/shutdown` - Shut down the bot.
 
+## Built With
+
+* [Python Telegram Bot](https://github.com/python-telegram-bot/python-telegram-bot) - Python interface for Telegram's official bot API
+* [python-twitter](https://github.com/bear/python-twitter) - Python interface for Twitter's official bot API
